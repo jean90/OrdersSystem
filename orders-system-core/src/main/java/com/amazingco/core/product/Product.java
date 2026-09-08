@@ -46,6 +46,31 @@ public class Product {
         return new Product(sku, name, description, price, category, ProductStatus.ACTIVE, now, now);
     }
 
+    /**
+     * Rehydrates a {@code Product} from already-persisted state, preserving its actual
+     * {@code status}/timestamps rather than the {@code ACTIVE}/now defaults {@link #create} applies.
+     * For use by the persistence layer only — not a way to create a new product.
+     */
+    public static Product reconstitute(Sku sku, String name, String description, Money price, String category,
+                                        ProductStatus status, Instant createdAt, Instant updatedAt) {
+        if (sku == null) {
+            throw new IllegalArgumentException("sku must not be null");
+        }
+        if (price == null) {
+            throw new IllegalArgumentException("price must not be null");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("status must not be null");
+        }
+        if (createdAt == null || updatedAt == null) {
+            throw new IllegalArgumentException("createdAt/updatedAt must not be null");
+        }
+        requireNonBlank(name, "name");
+        requireNonBlank(category, "category");
+
+        return new Product(sku, name, description, price, category, status, createdAt, updatedAt);
+    }
+
     public void rename(String newName) {
         requireNonBlank(newName, "name");
         this.name = newName;

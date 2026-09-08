@@ -65,4 +65,13 @@ class StockTest {
         assertEquals(Quantity.ZERO, stock.reserved());
         assertEquals(Quantity.of(10), stock.onHand());
     }
+
+    @Test
+    void reconstitutePreservesPersistedReservedRatherThanDefaultingToZero() {
+        Stock stock = Stock.reconstitute(SKU, Quantity.of(6), Quantity.of(4));
+
+        assertEquals(Quantity.of(6), stock.available());
+        assertEquals(Quantity.of(4), stock.reserved());
+        assertEquals(Quantity.of(10), stock.onHand());
+    }
 }

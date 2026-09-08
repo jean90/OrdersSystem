@@ -4,6 +4,8 @@ import com.amazingco.core.valueobject.Money;
 import com.amazingco.core.valueobject.Sku;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -74,5 +76,25 @@ class ProductTest {
         product.redescribe(null);
 
         assertEquals(null, product.description());
+    }
+
+    @Test
+    void reconstitutePreservesPersistedStateRatherThanDefaulting() {
+        Instant createdAt = Instant.parse("2024-01-01T00:00:00Z");
+        Instant updatedAt = Instant.parse("2024-06-01T00:00:00Z");
+
+        Product product = Product.reconstitute(new Sku("ABC-123"), "Widget", "A widget",
+                Money.of("9.99", "USD"), "Widgets", ProductStatus.DISCONTINUED, createdAt, updatedAt);
+
+        assertEquals(ProductStatus.DISCONTINUED, product.status());
+        assertEquals(createdAt, product.createdAt());
+        assertEquals(updatedAt, product.updatedAt());
+    }
+
+    @Test
+    void reconstituteRejectsBlankName() {
+        assertThrows(IllegalArgumentException.class, () -> Product.reconstitute(
+                new Sku("ABC-123"), "   ", "A widget", Money.of("9.99", "USD"), "Widgets",
+                ProductStatus.ACTIVE, Instant.now(), Instant.now()));
     }
 }

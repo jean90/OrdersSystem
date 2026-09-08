@@ -36,6 +36,24 @@ public class Stock {
         return new Stock(sku, initialAvailable, Quantity.ZERO);
     }
 
+    /**
+     * Rehydrates a {@code Stock} from already-persisted {@code available}/{@code reserved}
+     * values, rather than {@link #initial}'s always-zero-reserved default. For use by the
+     * persistence layer only.
+     */
+    public static Stock reconstitute(Sku sku, Quantity available, Quantity reserved) {
+        if (sku == null) {
+            throw new IllegalArgumentException("sku must not be null");
+        }
+        if (available == null) {
+            throw new IllegalArgumentException("available must not be null");
+        }
+        if (reserved == null) {
+            throw new IllegalArgumentException("reserved must not be null");
+        }
+        return new Stock(sku, available, reserved);
+    }
+
     public void reserve(Quantity quantity) {
         if (available.isLessThan(quantity)) {
             throw new InsufficientStockException(sku, quantity, available);
