@@ -66,6 +66,11 @@ public class Product {
         touch();
     }
 
+    public void redescribe(String newDescription) {
+        this.description = newDescription;
+        touch();
+    }
+
     public void discontinue() {
         if (status == ProductStatus.DISCONTINUED) {
             return;
