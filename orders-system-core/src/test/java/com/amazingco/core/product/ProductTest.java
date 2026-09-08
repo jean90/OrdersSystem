@@ -52,4 +52,27 @@ class ProductTest {
         assertEquals(ProductStatus.DISCONTINUED, product.status());
         assertEquals(updatedAtAfterFirst, product.updatedAt());
     }
+
+    @Test
+    void redescribeUpdatesDescriptionAndBumpsUpdatedAt() throws InterruptedException {
+        Product product = Product.create(new Sku("ABC-123"), "Widget", "A widget",
+                Money.of("9.99", "USD"), "Widgets");
+        var createdAt = product.updatedAt();
+
+        Thread.sleep(1);
+        product.redescribe("An even better widget");
+
+        assertEquals("An even better widget", product.description());
+        assertEquals(true, product.updatedAt().isAfter(createdAt));
+    }
+
+    @Test
+    void redescribeAllowsBlank() {
+        Product product = Product.create(new Sku("ABC-123"), "Widget", "A widget",
+                Money.of("9.99", "USD"), "Widgets");
+
+        product.redescribe(null);
+
+        assertEquals(null, product.description());
+    }
 }
