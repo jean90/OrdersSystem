@@ -1,0 +1,15 @@
+# Defaults assume a local Postgres reachable at localhost:5432 (e.g. `docker run
+# postgres:16` or the eventual `postgres-stock` service in docker-compose.yml, which
+# doesn't exist yet). Every value is overridable via env var for other environments.
+spring:
+  application:
+    name: stocking-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:stocking}
+    username: ${DB_USER:stocking}
+    password: ${DB_PASSWORD:stocking}
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8081}
