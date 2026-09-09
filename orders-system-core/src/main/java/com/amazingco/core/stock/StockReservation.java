@@ -48,6 +48,34 @@ public class StockReservation {
                 ReservationStatus.RESERVED, now, now);
     }
 
+    /**
+     * Rehydrates a {@code StockReservation} from already-persisted state, preserving its
+     * actual {@code id}/{@code status}/timestamps rather than {@link #create}'s
+     * new-id/RESERVED/now defaults. For use by the persistence layer only.
+     */
+    public static StockReservation reconstitute(ReservationId id, OrderId orderId, Sku sku, Quantity quantity,
+                                                 ReservationStatus status, Instant createdAt, Instant updatedAt) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        if (orderId == null) {
+            throw new IllegalArgumentException("orderId must not be null");
+        }
+        if (sku == null) {
+            throw new IllegalArgumentException("sku must not be null");
+        }
+        if (quantity == null || quantity.value() <= 0) {
+            throw new IllegalArgumentException("quantity must be greater than zero");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("status must not be null");
+        }
+        if (createdAt == null || updatedAt == null) {
+            throw new IllegalArgumentException("createdAt/updatedAt must not be null");
+        }
+        return new StockReservation(id, orderId, sku, quantity, status, createdAt, updatedAt);
+    }
+
     public void confirm() {
         if (status == ReservationStatus.CONFIRMED) {
             return;

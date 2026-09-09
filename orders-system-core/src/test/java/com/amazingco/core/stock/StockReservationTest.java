@@ -4,6 +4,8 @@ import com.amazingco.core.valueobject.OrderId;
 import com.amazingco.core.valueobject.Sku;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,5 +61,20 @@ class StockReservationTest {
         reservation.confirm();
 
         assertThrows(InvalidReservationStateException.class, reservation::release);
+    }
+
+    @Test
+    void reconstitutePreservesPersistedIdStatusAndTimestamps() {
+        ReservationId id = ReservationId.newId();
+        Instant createdAt = Instant.parse("2024-01-01T00:00:00Z");
+        Instant updatedAt = Instant.parse("2024-06-01T00:00:00Z");
+
+        StockReservation reservation = StockReservation.reconstitute(id, ORDER_ID, SKU, Quantity.of(2),
+                ReservationStatus.CONFIRMED, createdAt, updatedAt);
+
+        assertEquals(id, reservation.id());
+        assertEquals(ReservationStatus.CONFIRMED, reservation.status());
+        assertEquals(createdAt, reservation.createdAt());
+        assertEquals(updatedAt, reservation.updatedAt());
     }
 }
