@@ -27,6 +27,14 @@ public interface StockRepository {
     boolean tryReserve(Sku sku, Quantity quantity);
 
     /**
+     * Atomically inserts a new stock row with {@code available = initialAvailable} and
+     * {@code reserved = 0}. Returns {@code false} (no row inserted) if a stock row for this
+     * SKU already exists — mirrors {@link #tryReserve}'s rows-affected contract rather than
+     * a read-then-insert check.
+     */
+    boolean tryInitialize(Sku sku, Quantity initialAvailable);
+
+    /**
      * Atomically decrements {@code reserved} by {@code quantity} (stock consumed,
      * never returns to {@code available}).
      */

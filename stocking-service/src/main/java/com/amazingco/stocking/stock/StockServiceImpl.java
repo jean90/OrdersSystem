@@ -26,6 +26,14 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
+    public void initialize(Sku sku, Quantity initialAvailable) {
+        boolean created = stockRepository.tryInitialize(sku, initialAvailable);
+        if (!created) {
+            throw new StockAlreadyExistsException(sku);
+        }
+    }
+
+    @Override
     public void confirmReservation(Sku sku, Quantity quantity) {
         stockRepository.confirmReservation(sku, quantity);
     }

@@ -22,6 +22,13 @@ interface SpringDataStockRepository extends CrudRepository<StockEntity, String> 
     int tryReserve(@Param("sku") String sku, @Param("quantity") int quantity);
 
     @Modifying
+    @Query("""
+            INSERT INTO stock (sku, available, reserved) VALUES (:sku, :available, 0)
+            ON CONFLICT (sku) DO NOTHING
+            """)
+    int tryInitialize(@Param("sku") String sku, @Param("available") int available);
+
+    @Modifying
     @Query("UPDATE stock SET reserved = reserved - :quantity WHERE sku = :sku AND reserved >= :quantity")
     int confirmReservation(@Param("sku") String sku, @Param("quantity") int quantity);
 

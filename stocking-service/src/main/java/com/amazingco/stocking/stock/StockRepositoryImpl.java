@@ -22,6 +22,11 @@ public class StockRepositoryImpl implements StockRepository {
     }
 
     @Override
+    public boolean tryInitialize(Sku sku, Quantity initialAvailable) {
+        return springDataStockRepository.tryInitialize(sku.value(), initialAvailable.value()) > 0;
+    }
+
+    @Override
     public void confirmReservation(Sku sku, Quantity quantity) {
         springDataStockRepository.confirmReservation(sku.value(), quantity.value());
     }
