@@ -2,6 +2,7 @@ package com.amazingco.core.valueobject;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Objects;
 
 /**
  * Monetary amount in a specific currency. Uses {@link BigDecimal} rather than a floating-point
@@ -40,5 +41,26 @@ public record Money(BigDecimal amount, Currency currency) {
             throw new IllegalArgumentException(
                     "Cannot operate on Money with different currencies: " + this.currency + " vs " + other.currency);
         }
+    }
+
+    /**
+     * {@code BigDecimal.equals()} is scale-sensitive ({@code 9.99} != {@code 9.9900}), which
+     * would make two amounts that are the same money compare unequal after a round-trip
+     * through a fixed-scale {@code NUMERIC} column. Compare by numeric value instead.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Money other)) {
+            return false;
+        }
+        return amount.compareTo(other.amount) == 0 && currency.equals(other.currency);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(amount.stripTrailingZeros(), currency);
     }
 }
