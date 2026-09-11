@@ -14,10 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link StockRepository} has no insert method by design — every write is an atomic
- * conditional {@code UPDATE} on a row that must already exist (see the concurrency
- * architecture note). So these tests seed the {@code stock} row directly via
- * {@link JdbcTemplate}, the way a not-yet-built "initialize stock" flow eventually would.
+ * Every write on {@link StockRepository} is an atomic conditional statement — either a
+ * guarded {@code UPDATE} on a row that must already exist, or {@link #tryInitializeInsertsNewRowWithZeroReserved()}'s
+ * conditional {@code INSERT} (see the concurrency architecture note). Tests other than the
+ * {@code tryInitialize} ones seed the {@code stock} row directly via {@link JdbcTemplate}
+ * since {@code tryReserve}/{@code confirmReservation}/{@code releaseReservation} all require
+ * an existing row.
  */
 class StockRepositoryImplIT extends AbstractPostgresIntegrationTest {
 
@@ -69,6 +71,28 @@ class StockRepositoryImplIT extends AbstractPostgresIntegrationTest {
 
         assertFalse(reserved);
         assertTrue(stockRepository.findBySku(SKU).isEmpty());
+    }
+
+    @Test
+    void tryInitializeInsertsNewRowWithZeroReserved() {
+        boolean initialized = stockRepository.tryInitialize(SKU, Quantity.of(20));
+
+        assertTrue(initialized);
+        Stock stock = stockRepository.findBySku(SKU).orElseThrow();
+        assertEquals(Quantity.of(20), stock.available());
+        assertEquals(Quantity.ZERO, stock.reserved());
+    }
+
+    @Test
+    void tryInitializeFailsAndLeavesRowUnchangedWhenSkuAlreadyExists() {
+        seedStock(10, 3);
+
+        boolean initialized = stockRepository.tryInitialize(SKU, Quantity.of(99));
+
+        assertFalse(initialized);
+        Stock stock = stockRepository.findBySku(SKU).orElseThrow();
+        assertEquals(Quantity.of(10), stock.available());
+        assertEquals(Quantity.of(3), stock.reserved());
     }
 
     @Test

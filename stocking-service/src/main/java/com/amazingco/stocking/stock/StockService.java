@@ -19,6 +19,11 @@ public interface StockService {
      */
     void reserve(Sku sku, Quantity quantity);
 
+    /**
+     * Throws {@link StockAlreadyExistsException} if a stock row already exists for this SKU.
+     */
+    void initialize(Sku sku, Quantity initialAvailable);
+
     void confirmReservation(Sku sku, Quantity quantity);
 
     void releaseReservation(Sku sku, Quantity quantity);

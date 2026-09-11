@@ -66,6 +66,22 @@ class StockServiceImplTest {
     }
 
     @Test
+    void initializeSucceedsWhenRepositoryInsertsNewRow() {
+        when(stockRepository.tryInitialize(SKU, QUANTITY)).thenReturn(true);
+
+        stockService.initialize(SKU, QUANTITY);
+
+        verify(stockRepository).tryInitialize(SKU, QUANTITY);
+    }
+
+    @Test
+    void initializeThrowsStockAlreadyExistsWhenRepositoryDeclines() {
+        when(stockRepository.tryInitialize(SKU, QUANTITY)).thenReturn(false);
+
+        assertThrows(StockAlreadyExistsException.class, () -> stockService.initialize(SKU, QUANTITY));
+    }
+
+    @Test
     void confirmReservationDelegatesToRepository() {
         stockService.confirmReservation(SKU, QUANTITY);
 
