@@ -84,12 +84,25 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
                 </plugin>
+                <!-- The project targets Java 21 (see java.version above); this only works around
+                     Mockito's bundled Byte Buddy not yet supporting class-mocking on newer JDKs
+                     a developer's local `java`/`mvn` may happen to run on. Harmless on JDK 21. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                    </configuration>
+                </plugin>
                 <!-- Runs *IT.java integration tests during `mvn verify` (Surefire, bound to
                      `mvn test`, ignores that naming pattern). -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>3.5.4</version>
+                    <configuration>
+                        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+                    </configuration>
                     <executions>
                         <execution>
                             <goals>
