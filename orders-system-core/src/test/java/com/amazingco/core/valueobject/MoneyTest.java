@@ -31,6 +31,13 @@ class MoneyTest {
     }
 
     @Test
+    void multipliesByAPositiveFactor() {
+        Money unitPrice = Money.of("9.99", "USD");
+
+        assertEquals(Money.of("29.97", "USD"), unitPrice.multiply(3));
+    }
+
+    @Test
     void rejectsCurrencyMismatch() {
         Money usd = Money.of("10.00", "USD");
         Money eur = Money.of("10.00", "EUR");
