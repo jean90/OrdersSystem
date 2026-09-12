@@ -36,6 +36,10 @@ public record Money(BigDecimal amount, Currency currency) {
         return new Money(this.amount.subtract(other.amount), this.currency);
     }
 
+    public Money multiply(int factor) {
+        return new Money(this.amount.multiply(BigDecimal.valueOf(factor)), this.currency);
+    }
+
     private void requireSameCurrency(Money other) {
         if (!this.currency.equals(other.currency)) {
             throw new IllegalArgumentException(
