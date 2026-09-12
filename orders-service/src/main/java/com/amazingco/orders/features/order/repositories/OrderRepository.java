@@ -17,4 +17,20 @@ public interface OrderRepository {
     Order save(Order order);
 
     Optional<Order> findById(OrderId orderId);
+
+    /**
+     * Backs the {@code Idempotency-Key} requirement on {@code POST /api/orders}. Returns the id
+     * of the order already created for this key, if any.
+     */
+    Optional<OrderId> findOrderIdByIdempotencyKey(String idempotencyKey);
+
+    /**
+     * Records that {@code idempotencyKey} produced {@code orderId}. Relies on the
+     * {@code order_idempotency_key} table's primary key to reject a duplicate key outright
+     * (see {@code V2__create_order_idempotency_key_table.sql}) — this doesn't itself guard
+     * against two truly concurrent requests both passing the "not found yet" check before
+     * either calls this; the second one's insert would fail its unique-key constraint. Same
+     * class of accepted simplification as stocking-service's ReserveStockUseCase.
+     */
+    void recordIdempotencyKey(String idempotencyKey, OrderId orderId);
 }

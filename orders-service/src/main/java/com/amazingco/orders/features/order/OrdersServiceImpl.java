@@ -6,6 +6,8 @@ import com.amazingco.core.valueobject.OrderId;
 import com.amazingco.orders.features.order.repositories.OrderRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class OrdersServiceImpl implements OrdersService {
 
@@ -24,5 +26,15 @@ public class OrdersServiceImpl implements OrdersService {
     public Order findById(OrderId orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    @Override
+    public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
+        return orderRepository.findOrderIdByIdempotencyKey(idempotencyKey).flatMap(orderRepository::findById);
+    }
+
+    @Override
+    public void recordIdempotencyKey(String idempotencyKey, OrderId orderId) {
+        orderRepository.recordIdempotencyKey(idempotencyKey, orderId);
     }
 }

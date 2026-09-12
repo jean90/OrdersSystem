@@ -15,11 +15,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ class CreateOrderUseCaseTest {
 
     private static final CustomerId CUSTOMER_ID = CustomerId.newId();
     private static final Sku SKU = new Sku("ABC-123");
+    private static final String IDEMPOTENCY_KEY = "key-1";
 
     @Mock
     private OrdersService ordersService;
@@ -36,8 +39,9 @@ class CreateOrderUseCaseTest {
     void buildsOrderFromCommandLinesAndDelegatesToService() {
         CreateOrderUseCase useCase = new CreateOrderUseCase(ordersService);
         CreateOrderCommand command = new CreateOrderCommand("trace-1", CUSTOMER_ID,
-                List.of(new OrderLineCommand(SKU, Quantity.of(2), Money.of("9.99", "USD"))));
+                List.of(new OrderLineCommand(SKU, Quantity.of(2), Money.of("9.99", "USD"))), IDEMPOTENCY_KEY);
 
+        when(ordersService.findByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(Optional.empty());
         Order saved = Order.create(CUSTOMER_ID);
         when(ordersService.create(any(Order.class))).thenReturn(saved);
 
@@ -50,12 +54,29 @@ class CreateOrderUseCaseTest {
         assertEquals(1, passed.lines().size());
         assertEquals(Money.of("19.98", "USD"), passed.totalAmount());
         assertSame(saved, result);
+        verify(ordersService).recordIdempotencyKey(IDEMPOTENCY_KEY, saved.orderId());
+    }
+
+    @Test
+    void replayingTheSameIdempotencyKeyReturnsTheExistingOrderWithoutCreatingAnother() {
+        CreateOrderUseCase useCase = new CreateOrderUseCase(ordersService);
+        Order existing = Order.create(CUSTOMER_ID);
+        CreateOrderCommand command = new CreateOrderCommand("trace-1", CUSTOMER_ID,
+                List.of(new OrderLineCommand(SKU, Quantity.of(2), Money.of("9.99", "USD"))), IDEMPOTENCY_KEY);
+        when(ordersService.findByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(Optional.of(existing));
+
+        Order result = useCase.execute(command);
+
+        assertSame(existing, result);
+        verify(ordersService, never()).create(any(Order.class));
+        verify(ordersService, never()).recordIdempotencyKey(any(), any());
     }
 
     @Test
     void rejectsAnEmptyLineList() {
         CreateOrderUseCase useCase = new CreateOrderUseCase(ordersService);
-        CreateOrderCommand command = new CreateOrderCommand("trace-1", CUSTOMER_ID, List.of());
+        CreateOrderCommand command = new CreateOrderCommand("trace-1", CUSTOMER_ID, List.of(), IDEMPOTENCY_KEY);
+        when(ordersService.findByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
