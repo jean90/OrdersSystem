@@ -9,11 +9,14 @@ public final class CreateOrderCommand extends Command {
 
     private final CustomerId customerId;
     private final List<OrderLineCommand> lines;
+    private final String idempotencyKey;
 
-    public CreateOrderCommand(String traceId, CustomerId customerId, List<OrderLineCommand> lines) {
+    public CreateOrderCommand(String traceId, CustomerId customerId, List<OrderLineCommand> lines,
+                               String idempotencyKey) {
         super(traceId);
         this.customerId = customerId;
         this.lines = lines;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public CustomerId customerId() {
@@ -22,5 +25,9 @@ public final class CreateOrderCommand extends Command {
 
     public List<OrderLineCommand> lines() {
         return lines;
+    }
+
+    public String idempotencyKey() {
+        return idempotencyKey;
     }
 }

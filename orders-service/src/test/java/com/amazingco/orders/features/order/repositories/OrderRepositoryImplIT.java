@@ -11,9 +11,11 @@ import com.amazingco.orders.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrderRepositoryImplIT extends AbstractPostgresIntegrationTest {
@@ -29,6 +31,7 @@ class OrderRepositoryImplIT extends AbstractPostgresIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.update("DELETE FROM order_idempotency_key");
         jdbcTemplate.update("DELETE FROM order_line");
         jdbcTemplate.update("DELETE FROM orders");
     }
@@ -81,5 +84,36 @@ class OrderRepositoryImplIT extends AbstractPostgresIntegrationTest {
 
         Order reloaded = orderRepository.findById(order.orderId()).orElseThrow();
         assertEquals(OrderStatus.CONFIRMED, reloaded.status());
+    }
+
+    @Test
+    void findOrderIdByIdempotencyKeyReturnsEmptyWhenUnknown() {
+        assertTrue(orderRepository.findOrderIdByIdempotencyKey("key-1").isEmpty());
+    }
+
+    @Test
+    void recordIdempotencyKeyMakesItFindableByThatKey() {
+        Order order = Order.create(CustomerId.newId());
+        order.addLine(SKU_A, Quantity.of(1), Money.of("9.99", "USD"));
+        orderRepository.save(order);
+
+        orderRepository.recordIdempotencyKey("key-1", order.orderId());
+
+        assertEquals(order.orderId(), orderRepository.findOrderIdByIdempotencyKey("key-1").orElseThrow());
+    }
+
+    @Test
+    void recordingTheSameIdempotencyKeyTwiceViolatesItsUniqueConstraint() {
+        Order first = Order.create(CustomerId.newId());
+        first.addLine(SKU_A, Quantity.of(1), Money.of("9.99", "USD"));
+        orderRepository.save(first);
+        Order second = Order.create(CustomerId.newId());
+        second.addLine(SKU_B, Quantity.of(1), Money.of("5.00", "USD"));
+        orderRepository.save(second);
+
+        orderRepository.recordIdempotencyKey("key-1", first.orderId());
+
+        assertThrows(DataIntegrityViolationException.class,
+                () -> orderRepository.recordIdempotencyKey("key-1", second.orderId()));
     }
 }

@@ -15,6 +15,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,5 +56,30 @@ class OrdersServiceImplTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         assertThrows(OrderNotFoundException.class, () -> ordersService.findById(orderId));
+    }
+
+    @Test
+    void findByIdempotencyKeyReturnsEmptyWhenNoOrderRecordedForKey() {
+        when(orderRepository.findOrderIdByIdempotencyKey("key-1")).thenReturn(Optional.empty());
+
+        assertTrue(ordersService.findByIdempotencyKey("key-1").isEmpty());
+    }
+
+    @Test
+    void findByIdempotencyKeyLoadsTheOrderTheKeyPointsTo() {
+        Order order = Order.create(CustomerId.newId());
+        when(orderRepository.findOrderIdByIdempotencyKey("key-1")).thenReturn(Optional.of(order.orderId()));
+        when(orderRepository.findById(order.orderId())).thenReturn(Optional.of(order));
+
+        assertSame(order, ordersService.findByIdempotencyKey("key-1").orElseThrow());
+    }
+
+    @Test
+    void recordIdempotencyKeyDelegatesToRepository() {
+        OrderId orderId = OrderId.newId();
+
+        ordersService.recordIdempotencyKey("key-1", orderId);
+
+        verify(orderRepository).recordIdempotencyKey("key-1", orderId);
     }
 }

@@ -4,6 +4,8 @@ import com.amazingco.core.order.Order;
 import com.amazingco.core.order.OrderNotFoundException;
 import com.amazingco.core.valueobject.OrderId;
 
+import java.util.Optional;
+
 /**
  * Aggregate service port for {@link Order}. Takes/returns the aggregate itself rather than its
  * individual fields — building the aggregate from a command's values is the use case's job; this
@@ -22,4 +24,12 @@ public interface OrdersService {
      * Throws {@link OrderNotFoundException} if no order exists for this id.
      */
     Order findById(OrderId orderId);
+
+    /**
+     * Backs the {@code Idempotency-Key} requirement on {@code POST /api/orders}: the order
+     * already created for this key, if any.
+     */
+    Optional<Order> findByIdempotencyKey(String idempotencyKey);
+
+    void recordIdempotencyKey(String idempotencyKey, OrderId orderId);
 }
