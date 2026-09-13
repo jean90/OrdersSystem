@@ -29,6 +29,11 @@ public class OrdersServiceImpl implements OrdersService {
     }
 
     @Override
+    public Order update(Order order) {
+        return orderRepository.save(order);
+    }
+
+    @Override
     public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
         return orderRepository.findOrderIdByIdempotencyKey(idempotencyKey).flatMap(orderRepository::findById);
     }
