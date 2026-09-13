@@ -26,6 +26,13 @@ public interface OrdersService {
     Order findById(OrderId orderId);
 
     /**
+     * Persists changes to an order the caller has already loaded (via {@link #findById}) and
+     * mutated — e.g. the order-transaction orchestrator cancelling it as compensation. Does not
+     * re-check existence. Mirrors stocking-service's {@code ProductsService} create/update split.
+     */
+    Order update(Order order);
+
+    /**
      * Backs the {@code Idempotency-Key} requirement on {@code POST /api/orders}: the order
      * already created for this key, if any.
      */

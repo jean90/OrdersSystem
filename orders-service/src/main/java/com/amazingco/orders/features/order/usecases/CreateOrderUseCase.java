@@ -5,6 +5,7 @@ import com.amazingco.core.usecase.UseCase;
 import com.amazingco.orders.features.order.OrdersService;
 import com.amazingco.orders.features.order.dtos.CreateOrderCommand;
 import com.amazingco.orders.features.order.dtos.OrderLineCommand;
+import com.amazingco.orders.features.ordertransaction.OrderTransactionOrchestrator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +20,11 @@ import java.util.Optional;
 public class CreateOrderUseCase implements UseCase<CreateOrderCommand, Order> {
 
     private final OrdersService ordersService;
+    private final OrderTransactionOrchestrator orderTransactionOrchestrator;
 
-    public CreateOrderUseCase(OrdersService ordersService) {
+    public CreateOrderUseCase(OrdersService ordersService, OrderTransactionOrchestrator orderTransactionOrchestrator) {
         this.ordersService = ordersService;
+        this.orderTransactionOrchestrator = orderTransactionOrchestrator;
     }
 
     @Override
@@ -40,6 +43,11 @@ public class CreateOrderUseCase implements UseCase<CreateOrderCommand, Order> {
         }
         Order saved = ordersService.create(order);
         ordersService.recordIdempotencyKey(command.idempotencyKey(), saved.orderId());
+        // Recording the key before starting the transaction means a crash-and-retry here is
+        // caught by the idempotent-replay check above on the next attempt (no duplicate order,
+        // no duplicate reservation command) — the narrower gap this leaves (order+key committed,
+        // transaction never started) is a data-consistency issue, not a duplicate-side-effect one.
+        orderTransactionOrchestrator.start(saved, command.traceId());
         return saved;
     }
 }
